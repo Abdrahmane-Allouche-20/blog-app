@@ -8,7 +8,7 @@ interface ThemeProps {
 }
 
 const Theme: React.FC<ThemeProps> = ({ children }) => {
-  const { theme, setTheme } = useTheme();
+  const { theme} = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {

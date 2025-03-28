@@ -4,7 +4,7 @@ import { clerkClient } from '@clerk/clerk-sdk-node' // Correct import
 import { WebhookEvent } from '@clerk/nextjs/server'
 import { createOrUpdate } from '@/lib/actions/user'
 
-export async function POST(req: Request): Promise<Response> {
+export async function POST(req) {
   const SIGNING_SECRET = process.env.SIGNING_SECRET
 
   if (!SIGNING_SECRET) {
@@ -29,7 +29,7 @@ export async function POST(req: Request): Promise<Response> {
   const payload = await req.json()
   const body = JSON.stringify(payload)
 
-  let evt: WebhookEvent
+  let evt;
 
   // Verify payload with headers
   try {
@@ -37,7 +37,7 @@ export async function POST(req: Request): Promise<Response> {
       'svix-id': svix_id,
       'svix-timestamp': svix_timestamp,
       'svix-signature': svix_signature,
-    }) as WebhookEvent
+    }) 
   } catch (err) {
     console.error('Error: Could not verify webhook:', err)
     return new Response('Error: Verification error', { status: 400 })

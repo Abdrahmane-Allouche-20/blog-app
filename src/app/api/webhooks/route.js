@@ -1,7 +1,7 @@
 import { Webhook } from 'svix'
 import { headers } from 'next/headers'
 import { clerkClient } from '@clerk/clerk-sdk-node' // Correct import
-import { WebhookEvent } from '@clerk/nextjs/server'
+
 import { createOrUpdate } from '@/lib/actions/user'
 
 export async function POST(req) {

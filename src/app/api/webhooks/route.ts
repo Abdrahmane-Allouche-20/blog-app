@@ -1,8 +1,9 @@
 import { Webhook } from 'svix'
 import { headers } from 'next/headers'
-import { WebhookEvent } from '@clerk/nextjs/server'
+import { clerkClient, WebhookEvent } from '@clerk/nextjs/server'
+import { createOrUpdate } from '@/lib/actions/user'
 
-export async function POST(req: Request) {
+export async function POST(req: Request):Promise<Response> {
   const SIGNING_SECRET = process.env.SIGNING_SECRET
 
   if (!SIGNING_SECRET) {
@@ -20,9 +21,7 @@ export async function POST(req: Request) {
 
   // If there are no headers, error out
   if (!svix_id || !svix_timestamp || !svix_signature) {
-    return new Response('Error: Missing Svix headers', {
-      status: 400,
-    })
+    return new Response('Error: Missing Svix headers', { status: 400 })
   }
 
   // Get body
@@ -40,25 +39,56 @@ export async function POST(req: Request) {
     }) as WebhookEvent
   } catch (err) {
     console.error('Error: Could not verify webhook:', err)
-    return new Response('Error: Verification error', {
-      status: 400,
-    })
+    return new Response('Error: Verification error', { status: 400 })
   }
 
-  // Do something with payload
-  // For this guide, log payload to console
-  const { id } = evt.data
-  const eventType = evt.type
+  // Log webhook details
+  const { id } = evt?.data
+  const eventType = evt?.type
   console.log(`Received webhook with ID ${id} and event type of ${eventType}`)
   console.log('Webhook payload:', body)
-  if (evt.type === 'user.created') {
-    console.log('userId:', evt.data.id)
+
+  // Handle user creation or update
+  if (evt.type === 'user.created' || evt.type === 'user.updated') {
+    try {
+      const { id, first_name, last_name, username, email_addresses, image_url } = evt?.data
+
+      // Ensure email_addresses is properly structured
+      const emailArray = Array.isArray(email_addresses) ? email_addresses : []
+
+      // Call createOrUpdate with correct parameter order
+      const user = await createOrUpdate(
+        id,
+        username ?? 'defaultUsername',
+        first_name ?? '',
+        last_name ?? '',
+        image_url ?? '',
+        emailArray
+      )
+
+      if (user || eventType === 'user.created') {
+        try {
+          await clerkClient.users.updateUserMetadata(id, {
+            publicMetadata: {
+              userMongoId: user?._id ?? '',
+              isAdmin: user?.isAdmin ?? false,
+            },
+          })
+        } catch (error) {
+          console.error('Error updating Clerk metadata:', error)
+          return new Response('Error updating metadata', { status: 500 })
+        }
+      }
+    } catch (error) {
+      console.error('Error processing user:', error)
+      return new Response('Error processing user', { status: 500 })
+    }
   }
-  if (evt.type === 'user.updated') {
-    console.log('user is updated', evt.data.id)
-  }
+
+  // Handle user deletion
   if (evt.type === 'user.deleted') {
-    console.log('user is deleted')
+    console.log('User is deleted')
   }
+
   return new Response('Webhook received', { status: 200 })
 }

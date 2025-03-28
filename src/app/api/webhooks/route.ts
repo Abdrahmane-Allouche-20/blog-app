@@ -1,25 +1,26 @@
 import { Webhook } from 'svix'
 import { headers } from 'next/headers'
-import { clerkClient, WebhookEvent } from '@clerk/nextjs/server'
+import { clerkClient } from '@clerk/clerk-sdk-node' // Correct import
+import { WebhookEvent } from '@clerk/nextjs/server'
 import { createOrUpdate } from '@/lib/actions/user'
 
-export async function POST(req: Request):Promise<Response> {
+export async function POST(req: Request): Promise<Response> {
   const SIGNING_SECRET = process.env.SIGNING_SECRET
 
   if (!SIGNING_SECRET) {
-    throw new Error('Error: Please add SIGNING_SECRET from Clerk Dashboard to .env or .env')
+    throw new Error('Error: Please add SIGNING_SECRET from Clerk Dashboard to .env')
   }
 
   // Create new Svix instance with secret
   const wh = new Webhook(SIGNING_SECRET)
 
   // Get headers
-  const headerPayload = await headers()
+  const headerPayload = headers()
   const svix_id = headerPayload.get('svix-id')
   const svix_timestamp = headerPayload.get('svix-timestamp')
   const svix_signature = headerPayload.get('svix-signature')
 
-  // If there are no headers, error out
+  // If headers are missing, return error
   if (!svix_id || !svix_timestamp || !svix_signature) {
     return new Response('Error: Missing Svix headers', { status: 400 })
   }

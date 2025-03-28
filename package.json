@@ -10,6 +10,7 @@
     "postinstall": "flowbite-react patch"
   },
   "dependencies": {
+    "@clerk/clerk-sdk-node": "^4.13.23",
     "@clerk/nextjs": "^6.12.10",
     "@clerk/themes": "^2.2.24",
     "@radix-ui/react-slot": "^1.1.2",
